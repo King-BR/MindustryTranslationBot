@@ -27,11 +27,6 @@ botUtils.clearAllErrors();
 // Handler de erros em promise
 process.on('unhandledRejection', (reason, p) => { console.log(reason) });
 
-// Starting Time - by Alstin112
-botUtils.jsonChange('./dataBank/serverState.json', server => {
-  server["serverStarted"] = (new Date()).getTime() - 10800000
-  return server;
-},true);
 
 // Event handler
 console.log('\n------------------\nEvents');
@@ -73,13 +68,11 @@ source.forEach(foldert => {
 client.commands = new Discord.Collection();
 client.commands = new Enmap();
 client.aliases = new Discord.Collection();
-let commandsFolder = fs.readdirSync("commands");
-
-// Config Utils handler setup
-client.utils = {}
-client.utilsAliases = {}
+client.utils = {};
+client.utilsAliases = {};
 
 // Command handler
+let commandsFolder = fs.readdirSync("commands");
 console.log('\n------------------\nCommands');
 commandsFolder.forEach(folder => {
   if (folder === "teste") return console.log("Achou a pasta teste");

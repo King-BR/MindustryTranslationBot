@@ -3,13 +3,10 @@ const chalk = require("chalk");
 const fs = require("fs");
 const format = require("date-fns/format");
 const md5 = require("md5");
-const zlib = require("zlib");
 
 // Files requires
 const config = require("./config.json");
 
-
-//--------------------------------------------------------------------------------------------------//
 // Error handler private utils
 /**
  * @param [fileName="null"] {String} Arquivo onde ocorreu o erro
@@ -27,7 +24,6 @@ function generateErrorID(fileName = "null", IDs = { server: 0, user: 0, msg: 0 }
 //--------------------------------------------------------------------------------------------------//
 // Exports
 module.exports = {
-
   //--------------------------------------------------------------------------------------------------//
   //#region Chalk config
 
@@ -37,6 +33,7 @@ module.exports = {
     warn: chalk.bold.keyword('orange'),
     ok: chalk.bold.green
   },
+
   //#endregion
   //--------------------------------------------------------------------------------------------------//
   //#region Mix utils
@@ -48,6 +45,16 @@ module.exports = {
    */
   isDev: (ID) => {
     if (config.devsID.includes(ID)) return true;
+    return false;
+  },
+
+  /**
+   * Checa se o usuario do ID fornecido faz parte do time de desenvolvedores
+   * @param ID {String|Number} ID do usuario para checar
+   * @returns {Boolean}
+   */
+  isTester: (ID) => {
+    if (config.testersID.includes(ID)) return true;
     return false;
   },
 
@@ -109,6 +116,7 @@ module.exports = {
     })
 
   },
+
   //#endregion
   //--------------------------------------------------------------------------------------------------//
   //#region Handler utils
@@ -212,5 +220,60 @@ module.exports = {
     return;
   },
 
+  //#endregion
+  //--------------------------------------------------------------------------------------------------//
+  //#region Json utils
+
+  /**
+   * transforma um objeto em um .json
+   * @param path {String} Caminho para o json a ser criado/substituido
+   * @param object {Any}
+   */
+  jsonPush: (path, object) => {
+    var data = JSON.stringify(object, null, 2);
+    fs.writeFileSync(path, data, (err) => {
+      if (err) throw err;
+    });
+    return false;
+  },
+
+  /**
+   * transforma um .json em um objeto
+   * @param path {String} Caminho para o json a ser transformado
+   * @returns {object} 
+   */
+  jsonPull: (path) => {
+    if (!(typeof path == "string" && path.endsWith('.json') && fs.existsSync(path))) return null;
+    var data = fs.readFileSync(path);
+    return JSON.parse(data);
+  },
+
+  /**
+   * Pega um .json e utiliza em uma função
+   * @param path {String} Caminho para o json usado
+   * @param func {function} função para utilizar o func
+   * @param min  {number} numero de segurança, se o objeto retornado tiver um tamanho menor, vai dar erro
+   * obs. Se voce for usar esse comando só pra editar/adicionar json,
+   * e nunca vai remover algo dele coloca no lugar de min o booleano true.
+   */
+  jsonChange: async (path, func, min = 0) => {
+    let bal = module.exports.jsonPull(path);
+
+    if (!bal) return console.log(`=> ${module.exports.newError(new Error('Não foi encontrado um json no caminho inserido'), "utils_jsonChange")}`);;
+
+    const ret = func(bal);
+    min = (typeof min == 'boolean' && min) ? Object.keys(bal).length : min;
+
+    if (typeof ret === 'object' && ret !== null) {
+
+      if (Object.keys(ret).length >= min) {
+
+        await module.exports.jsonPush(path, ret);
+
+      } else {
+        console.log(`=> ${module.exports.newError(new Error(`O tamanho do objeto (${Object.keys(ret).length}) foi menor que o esperado (${min})`), "utils_jsonChange")}`);
+      }
+    };
+  },
   //#endregion
 }
